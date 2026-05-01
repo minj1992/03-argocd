@@ -37,7 +37,36 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 kubectl port-forward svc/argocd-server -n argocd 8080:443
 ```
 
-### Step C: Deploy the Application
+### Step C: Build and Push Docker Images
+Before ArgoCD can deploy your application, you need to build the Docker images and push them to a registry (e.g., Docker Hub).
+
+#### 1. Login to Docker Hub
+```bash
+docker login
+```
+
+#### 2. Build the Backend Image
+Navigate to the backend directory and build the image:
+```bash
+cd app/backend
+docker build -t <your-docker-username>/order-api:v1 .
+```
+
+#### 3. Push to Registry
+```bash
+docker push <your-docker-username>/order-api:v1
+```
+
+#### 4. Update Manifests
+Update the image field in `manifests/inventory-app.yml` to use your new image:
+```yaml
+spec:
+  containers:
+  - name: backend
+    image: <your-docker-username>/order-api:v1
+```
+
+### Step D: Deploy the Application
 ```bash
 kubectl apply -f application.yml
 ```
@@ -66,7 +95,57 @@ Update the image version in your Git repository. ArgoCD will detect the change a
 
 ---
 
-## 5. Cleanup
+## 5. Automated CI/CD with GitHub Actions
+To automate the build and push process, create a GitHub Action workflow in `.github/workflows/ci.yml`.
+
+### Step 1: Add Secrets to GitHub
+Go to your repo **Settings > Secrets and variables > Actions** and add:
+- `DOCKER_USERNAME`: Your Docker Hub username.
+- `DOCKER_PASSWORD`: Your Docker Hub PAT (Personal Access Token).
+
+### Step 2: Create Workflow File
+```yaml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'app/**'
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push
+        uses: docker/build-push-action@v4
+        with:
+          context: ./app/backend
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/order-api:${{ github.sha }}
+
+      - name: Update Kubernetes Manifest
+        run: |
+          sed -i "s|image:.*|image: ${{ secrets.DOCKER_USERNAME }}/order-api:${{ github.sha }}|g" manifests/inventory-app.yml
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add manifests/inventory-app.yml
+          git commit -m "Update image to ${{ github.sha }}"
+          git push
+```
+
+---
+
+## 6. Cleanup
 ```bash
 kubectl delete application enterprise-orders -n argocd
 ```

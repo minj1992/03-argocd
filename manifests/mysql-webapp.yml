@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-svc
+  namespace: microservices-lab
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: microservices-lab
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8.0
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: password123
+        - name: MYSQL_DATABASE
+          value: nishant_db
+        - name: MYSQL_USER
+          value: admin
+        - name: MYSQL_PASSWORD
+          value: password123
+        ports:
+        - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nishant-webapp-svc
+  namespace: microservices-lab
+spec:
+  type: NodePort
+  ports:
+  - port: 80
+    targetPort: 5000
+    nodePort: 30005
+  selector:
+    app: nishant-webapp
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nishant-webapp
+  namespace: microservices-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nishant-webapp
+  template:
+    metadata:
+      labels:
+        app: nishant-webapp
+    spec:
+      containers:
+      - name: webapp
+        image: <your-docker-username>/nishant-webapp:latest
+        env:
+        - name: MYSQL_HOST
+          value: mysql-svc
+        - name: MYSQL_DB
+          value: nishant_db
+        - name: MYSQL_USER
+          value: admin
+        - name: MYSQL_PASSWORD
+          value: password123
+        ports:
+        - containerPort: 5000

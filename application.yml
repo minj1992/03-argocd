@@ -6,9 +6,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/nishant-minj/microservices-repo.git
-    targetRevision: HEAD
-    path: k8s-manifests
+    repoURL: https://github.com/minj1992/03-argocd.git
+    targetRevision: master
+    path: manifests
   destination:
     server: https://kubernetes.default.svc
     namespace: microservices-lab

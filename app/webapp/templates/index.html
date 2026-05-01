@@ -1,0 +1,10 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="jumbotron text-center bg-white p-5 rounded-4 shadow-sm">
+    <h1 class="display-4">Welcome to Nishant DevOps Lab</h1>
+    <p class="lead">Building the future of automation and cloud native apps.</p>
+    <hr class="my-4">
+    <p>Join our community and explore the power of GitOps.</p>
+    <a class="btn btn-primary btn-lg" href="{{ url_for('register') }}" role="button">Get Started</a>
+</div>
+{% endblock %}
