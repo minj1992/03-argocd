@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Inventory Dashboard - ArgoCD Lab</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #0d1117; color: #c9d1d9; }
+    header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; }
+    header h1 { color: #58a6ff; font-size: 1.2rem; }
+    .version-badge { background: #388bfd; color: #fff; font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; }
+    main { max-width: 1000px; margin: 32px auto; padding: 0 24px; }
+    .card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+    .card h2 { color: #8b949e; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+    input, select { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px 12px; color: #c9d1d9; width: 100%; }
+    button { background: #238636; border: none; color: #fff; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+    button.refresh { background: #1f6feb; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { color: #8b949e; text-align: left; padding: 8px 12px; border-bottom: 1px solid #30363d; }
+    td { padding: 8px 12px; border-bottom: 1px solid #21262d; }
+    .low { color: #f85149; }
+    .ok { color: #3fb950; }
+    #msg { margin-top: 8px; font-size: 0.875rem; color: #3fb950; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>&#128230; Inventory Dashboard</h1>
+    <span class="version-badge" id="ver">Loading version...</span>
+  </header>
+  <main>
+    <div class="card">
+      <h2>Add / Update Item</h2>
+      <div class="grid">
+        <input id="sku" placeholder="SKU (e.g. LAPTOP-001)"/>
+        <input id="name" placeholder="Name (e.g. Dell XPS)"/>
+        <input id="qty" type="number" placeholder="Quantity" value="10"/>
+        <input id="warehouse" placeholder="Warehouse (e.g. WH-NORTH)"/>
+      </div>
+      <button onclick="addItem()">Save Item</button>
+      <div id="msg"></div>
+    </div>
+    <div class="card">
+      <h2>Inventory</h2>
+      <button class="refresh" onclick="loadInventory()">&#8635; Refresh</button>
+      <br/><br/>
+      <table>
+        <thead><tr><th>SKU</th><th>Name</th><th>Qty</th><th>Warehouse</th><th>Updated</th></tr></thead>
+        <tbody id="inv-body"></tbody>
+      </table>
+    </div>
+  </main>
+  <script>
+    async function loadVersion() {
+      try {
+        const r = await fetch('/version');
+        const d = await r.json();
+        document.getElementById('ver').textContent = `${d.version} | SHA: ${d.git_sha}`;
+      } catch(e) { document.getElementById('ver').textContent = 'offline'; }
+    }
+    async function addItem() {
+      const body = { sku: document.getElementById('sku').value, name: document.getElementById('name').value, quantity: parseInt(document.getElementById('qty').value), warehouse: document.getElementById('warehouse').value };
+      const res = await fetch('/inventory', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const d = await res.json();
+      document.getElementById('msg').textContent = res.ok ? `✓ Saved: ${body.sku}` : `✗ ${d.detail}`;
+      loadInventory();
+    }
+    async function loadInventory() {
+      const tbody = document.getElementById('inv-body');
+      try {
+        const r = await fetch('/inventory');
+        const items = await r.json();
+        tbody.innerHTML = items.map(i => `<tr><td>${i.sku}</td><td>${i.name}</td><td class="${i.quantity < 5 ? 'low' : 'ok'}">${i.quantity}</td><td>${i.warehouse}</td><td>${new Date(i.updated_at).toLocaleString()}</td></tr>`).join('');
+      } catch(e) { tbody.innerHTML = `<tr><td colspan="5" style="color:#f85149">API unreachable</td></tr>`; }
+    }
+    loadVersion(); loadInventory();
+  </script>
+</body>
+</html>
