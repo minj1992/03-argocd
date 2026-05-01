@@ -112,7 +112,7 @@ spec:
     spec:
       containers:
       - name: inventory-api
-        image: nishantminj/inventory-api:v1
+        image: minjteck/order-api:v1
         ports:
         - containerPort: 8000
         env:

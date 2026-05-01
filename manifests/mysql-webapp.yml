@@ -69,7 +69,7 @@ spec:
     spec:
       containers:
       - name: webapp
-        image: <your-docker-username>/nishant-webapp:latest
+        image: minjteck/nishant-webapp:v1
         env:
         - name: MYSQL_HOST
           value: mysql-svc
