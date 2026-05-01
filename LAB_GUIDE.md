@@ -73,6 +73,12 @@ spec:
   containers:
   - name: webapp
     image: minjteck/nishant-webapp:v1
+
+# In manifests/inventory-app.yml
+spec:
+  containers:
+  - name: webapp
+    image: minjteck/order-api:v1  
 ```
 
 ### Step D: Deploy the Application
