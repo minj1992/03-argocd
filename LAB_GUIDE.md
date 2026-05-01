@@ -49,21 +49,30 @@ docker login
 Navigate to the backend directory and build the image:
 ```bash
 cd app/backend
-docker build -t <your-docker-username>/order-api:v1 .
+docker build -t minjteck/order-api:v1 .
 ```
 
-#### 3. Push to Registry
+#### 3. Build the Nishant WebApp Image
+Navigate to the webapp directory and build the image:
 ```bash
-docker push <your-docker-username>/order-api:v1
+cd app/webapp
+docker build -t minjteck/nishant-webapp:v1 .
 ```
 
-#### 4. Update Manifests
-Update the image field in `manifests/inventory-app.yml` to use your new image:
+#### 4. Push to Registry
+```bash
+docker push minjteck/order-api:v1
+docker push minjteck/nishant-webapp:v1
+```
+
+#### 5. Update Manifests
+Update the image field in `manifests/inventory-app.yml` and `manifests/mysql-webapp.yml` to use your new images:
 ```yaml
+# In manifests/mysql-webapp.yml
 spec:
   containers:
-  - name: backend
-    image: <your-docker-username>/order-api:v1
+  - name: webapp
+    image: minjteck/nishant-webapp:v1
 ```
 
 ### Step D: Deploy the Application
@@ -82,10 +91,27 @@ kubectl get app enterprise-orders -n argocd
 # Status should be: Synced
 ```
 
-### Test "Self-Healing"
-Delete a deployment manually and watch ArgoCD recreate it within seconds:
+### Validate Application 1: Inventory API (Postgres + Redis)
+The inventory API is exposed as a ClusterIP. You can test it via port-forward:
 ```bash
-kubectl delete deployment order-api -n microservices-lab
+kubectl port-forward svc/inventory-api-svc -n microservices-lab 8081:80
+```
+Open your browser or use curl: `http://localhost:8081/health`
+
+### Validate Application 2: Nishant DevOps Lab WebApp (MySQL)
+The web app is exposed via NodePort on port **30005**.
+- If using Minikube: `minikube service nishant-webapp-svc -n microservices-lab --url`
+- If using a Cloud VM: `http://<VM-IP>:30005`
+- If using port-forward: 
+  ```bash
+  kubectl port-forward svc/nishant-webapp-svc -n microservices-lab 5000:80
+  ```
+  Then access `http://localhost:5000`
+
+### Test "Self-Healing"
+Delete the webapp deployment manually and watch ArgoCD recreate it:
+```bash
+kubectl delete deployment nishant-webapp -n microservices-lab
 # Wait 30s...
 kubectl get deployments -n microservices-lab
 ```
